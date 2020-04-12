@@ -4,13 +4,15 @@ import { Provider } from 'react-redux';
 import { AppLoading } from 'expo';
 import * as Font from 'expo-font';
 
-import ShopNavigator from './navigation/ShopNavigator';
 import productsReducer from './store/reducers/products';
 import cartReducer from './store/reducers/cart';
+import ordersReducer from './store/reducers/orders';
+import ShopNavigator from './navigation/ShopNavigator';
 
 const rootReducer = combineReducers({
 	cart: cartReducer,
-	products: productsReducer
+	products: productsReducer,
+	orders: ordersReducer,
 });
 
 const store = createStore(
@@ -20,13 +22,13 @@ const store = createStore(
 
 export default class App extends React.Component {
 	state = {
-		fontLoaded: false
+		fontLoaded: false,
 	};
 
 	async componentDidMount() {
 		await Font.loadAsync({
 			'open-sans': require('./assets/fonts/OpenSans-Regular.ttf'),
-			'open-sans-bold': require('./assets/fonts/OpenSans-Bold.ttf')
+			'open-sans-bold': require('./assets/fonts/OpenSans-Bold.ttf'),
 		});
 		this.setState({ fontLoaded: true });
 	}
