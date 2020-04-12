@@ -7,28 +7,32 @@ import {
   Button,
   StyleSheet
 } from 'react-native';
-import { useSelector } from 'react-redux';
-import DefaultText from '../../components/DefaultText';
+import { useSelector, useDispatch } from 'react-redux';
+
 import Colors from '../../constants/Colors';
+import * as cartActions from '../../store/actions/cart';
 
 const ProductDetailScreen = props => {
   const productId = props.navigation.getParam('productId');
   const selectedProduct = useSelector(state =>
     state.products.availableProducts.find(prod => prod.id === productId)
   );
+  const dispatch = useDispatch();
 
   return (
     <ScrollView>
       <Image style={styles.image} source={{ uri: selectedProduct.imageUrl }} />
       <View style={styles.actions}>
-        <Button title="Add to Cart" onPress={() => {}} color={Colors.primary} />
+        <Button
+          color={Colors.primary}
+          title="Add to Cart"
+          onPress={() => {
+            dispatch(cartActions.addToCart(selectedProduct));
+          }}
+        />
       </View>
-      <DefaultText style={styles.price} isTitle>
-        ${selectedProduct.price.toFixed(2)}
-      </DefaultText>
-      <DefaultText style={styles.description}>
-        {selectedProduct.description}
-      </DefaultText>
+      <Text style={styles.price}>${selectedProduct.price.toFixed(2)}</Text>
+      <Text style={styles.description}>{selectedProduct.description}</Text>
     </ScrollView>
   );
 };
@@ -40,11 +44,6 @@ ProductDetailScreen.navigationOptions = navData => {
 };
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
   image: {
     width: '100%',
     height: 300
@@ -54,9 +53,16 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   price: {
-    color: '#888'
+    fontSize: 20,
+    color: '#888',
+    textAlign: 'center',
+    marginVertical: 20,
+    fontFamily: 'open-sans-bold'
   },
   description: {
+    fontFamily: 'open-sans',
+    fontSize: 14,
+    textAlign: 'center',
     marginHorizontal: 20
   }
 });
