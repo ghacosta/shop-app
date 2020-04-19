@@ -52,7 +52,7 @@ const EditProductScreen = (props) => {
 						values.title,
 						values.description,
 						values.imageUrl,
-						values.price
+						+values.price
 					)
 				);
 			}
