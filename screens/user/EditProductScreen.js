@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import {
 	View,
 	ScrollView,
@@ -6,9 +6,12 @@ import {
 	TextInput,
 	StyleSheet,
 	Platform,
+	Alert,
 } from 'react-native';
 import { HeaderButtons, Item } from 'react-navigation-header-buttons';
 import { useSelector, useDispatch } from 'react-redux';
+import { Formik } from 'formik';
+import * as yup from 'yup';
 
 import HeaderButton from '../../components/UI/HeaderButton';
 import * as productsActions from '../../store/actions/products';
@@ -19,28 +22,43 @@ const EditProductScreen = (props) => {
 		state.products.userProducts.find((prod) => prod.id === prodId)
 	);
 	const dispatch = useDispatch();
-
-	const [title, setTitle] = useState(editedProduct ? editedProduct.title : '');
-	const [imageUrl, setImageUrl] = useState(
-		editedProduct ? editedProduct.imageUrl : ''
-	);
-	const [price, setPrice] = useState('');
-	const [description, setDescription] = useState(
-		editedProduct ? editedProduct.description : ''
-	);
+	const formikRef = useRef();
 
 	const submitHandler = useCallback(() => {
-		if (editedProduct) {
-			dispatch(
-				productsActions.updateProduct(prodId, title, description, imageUrl)
-			);
-		} else {
-			dispatch(
-				productsActions.createProduct(title, description, imageUrl, +price)
-			);
+		if (formikRef.current) {
+			if (!formikRef.current.isValid) {
+				Alert('Form Error', 'Check your form for errors before submitting', [
+					{
+						text: 'Cancel',
+						onPress: () => console.log('Cancel Pressed'),
+						style: 'cancel',
+					},
+				]);
+				return;
+			}
+			const { values } = formikRef.current;
+			if (editedProduct) {
+				dispatch(
+					productsActions.updateProduct(
+						prodId,
+						values.title,
+						values.description,
+						values.imageUrl
+					)
+				);
+			} else {
+				dispatch(
+					productsActions.createProduct(
+						values.title,
+						values.description,
+						values.imageUrl,
+						values.price
+					)
+				);
+			}
 		}
 		props.navigation.goBack();
-	}, [dispatch, prodId, title, description, imageUrl, price]);
+	}, [formikRef, dispatch, prodId]);
 
 	useEffect(() => {
 		props.navigation.setParams({ submit: submitHandler });
@@ -49,40 +67,89 @@ const EditProductScreen = (props) => {
 	return (
 		<ScrollView>
 			<View style={styles.form}>
-				<View style={styles.formControl}>
-					<Text style={styles.label}>Title</Text>
-					<TextInput
-						style={styles.input}
-						value={title}
-						onChangeText={(text) => setTitle(text)}
-					/>
-				</View>
-				<View style={styles.formControl}>
-					<Text style={styles.label}>Image URL</Text>
-					<TextInput
-						style={styles.input}
-						value={imageUrl}
-						onChangeText={(text) => setImageUrl(text)}
-					/>
-				</View>
-				{editedProduct ? null : (
-					<View style={styles.formControl}>
-						<Text style={styles.label}>Price</Text>
-						<TextInput
-							style={styles.input}
-							value={price}
-							onChangeText={(text) => setPrice(text)}
-						/>
-					</View>
-				)}
-				<View style={styles.formControl}>
-					<Text style={styles.label}>Description</Text>
-					<TextInput
-						style={styles.input}
-						value={description}
-						onChangeText={(text) => setDescription(text)}
-					/>
-				</View>
+				<Formik
+					innerRef={formikRef}
+					initialValues={{
+						title: editedProduct ? editedProduct.title : '',
+						imageUrl: editedProduct ? editedProduct.imageUrl : '',
+						price: '',
+						description: editedProduct ? editedProduct.description : '',
+					}}
+					validationSchema={yup.object().shape({
+						title: yup.string().required(),
+						imageUrl: yup.string().url().required(),
+						price: editedProduct
+							? yup.number().positive()
+							: yup
+									.number()
+									.typeError('price must be a number')
+									.positive()
+									.required(),
+						description: yup.string().required(),
+					})}
+				>
+					{({ handleChange, handleBlur, values, touched, errors }) => (
+						<React.Fragment>
+							<View style={styles.formControl}>
+								<Text style={styles.label}>Title</Text>
+								<TextInput
+									style={styles.input}
+									onChangeText={handleChange('title')}
+									onBlur={handleBlur('title')}
+									value={values.title}
+									returnKeyType="next"
+									autoCapitalize="sentences"
+								/>
+								{touched.title && errors.title && (
+									<Text style={styles.error}>{errors.title}</Text>
+								)}
+							</View>
+							<View style={styles.formControl}>
+								<Text style={styles.label}>Image URL</Text>
+								<TextInput
+									style={styles.input}
+									onChangeText={handleChange('imageUrl')}
+									onBlur={handleBlur('imageUrl')}
+									value={values.imageUrl}
+									returnKeyType="next"
+									autoCorrect
+								/>
+								{touched.imageUrl && errors.imageUrl && (
+									<Text style={styles.error}>{errors.imageUrl}</Text>
+								)}
+							</View>
+							{editedProduct ? null : (
+								<View style={styles.formControl}>
+									<Text style={styles.label}>Price</Text>
+									<TextInput
+										style={styles.input}
+										value={values.price}
+										onChangeText={handleChange('price')}
+										onBlur={handleBlur('price')}
+										keyboardType="decimal-pad"
+										returnKeyType="next"
+									/>
+									{touched.price && errors.price && (
+										<Text style={styles.error}>{errors.price}</Text>
+									)}
+								</View>
+							)}
+							<View style={styles.formControl}>
+								<Text style={styles.label}>Description</Text>
+								<TextInput
+									style={styles.input}
+									value={values.description}
+									onChangeText={handleChange('description')}
+									onBlur={handleBlur('description')}
+									multiline
+								/>
+								{touched.description && errors.description && (
+									<Text style={styles.error}>{errors.description}</Text>
+								)}
+							</View>
+						</React.Fragment>
+					)}
+				</Formik>
 			</View>
 		</ScrollView>
 	);
@@ -124,6 +191,9 @@ const styles = StyleSheet.create({
 		paddingVertical: 5,
 		borderBottomColor: '#ccc',
 		borderBottomWidth: 1,
+	},
+	error: {
+		color: 'red',
 	},
 });
 
