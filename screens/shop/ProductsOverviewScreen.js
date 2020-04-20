@@ -1,16 +1,52 @@
-import React from 'react';
-import { FlatList, Button, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+	FlatList,
+	Button,
+	Platform,
+	View,
+	ActivityIndicator,
+	StyleSheet,
+	Text,
+} from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { HeaderButtons, Item } from 'react-navigation-header-buttons';
 
 import HeaderButton from '../../components/UI/HeaderButton';
 import ProductItem from '../../components/shop/ProductItem';
 import * as cartActions from '../../store/actions/cart';
+import * as productsActions from '../../store/actions/products';
 import Colors from '../../constants/Colors';
 
 const ProductsOverviewScreen = (props) => {
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState(null);
 	const products = useSelector((state) => state.products.availableProducts);
 	const dispatch = useDispatch();
+
+	const loadProducts = useCallback(async () => {
+		setIsLoading(true);
+		try {
+			await dispatch(productsActions.fetchProducts());
+		} catch (error) {
+			setError(error.message);
+		}
+		setIsLoading(false);
+	}, [dispatch, setIsLoading, setError]);
+
+	useEffect(() => {
+		const willFocusSub = props.navigation.addListener(
+			'willFocus',
+			loadProducts
+		);
+
+		return () => {
+			willFocusSub.remove();
+		};
+	}, [loadProducts]);
+
+	useEffect(() => {
+		loadProducts();
+	}, [dispatch]);
 
 	const selectItemHandler = (id, title) => {
 		props.navigation.navigate('ProductDetail', {
@@ -18,6 +54,28 @@ const ProductsOverviewScreen = (props) => {
 			productTitle: title,
 		});
 	};
+
+	if (error) {
+		return (
+			<View style={styles.centered}>
+				<Text>{error}</Text>
+			</View>
+		);
+	}
+	if (isLoading) {
+		return (
+			<View style={styles.centered}>
+				<ActivityIndicator size="large" color={Colors.primary} />
+			</View>
+		);
+	}
+	if (!isLoading && products.length === 0) {
+		return (
+			<View style={styles.centered}>
+				<Text>No products found. Maybe start adding some.</Text>
+			</View>
+		);
+	}
 
 	return (
 		<FlatList
@@ -79,5 +137,9 @@ ProductsOverviewScreen.navigationOptions = (navData) => {
 		),
 	};
 };
+
+const styles = StyleSheet.create({
+	centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+});
 
 export default ProductsOverviewScreen;

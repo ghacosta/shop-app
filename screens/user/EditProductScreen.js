@@ -52,7 +52,7 @@ const EditProductScreen = (props) => {
 						values.title,
 						values.description,
 						values.imageUrl,
-						+values.price
+						values.price
 					)
 				);
 			}
@@ -88,7 +88,14 @@ const EditProductScreen = (props) => {
 						description: yup.string().required(),
 					})}
 				>
-					{({ handleChange, handleBlur, values, touched, errors }) => (
+					{({
+						handleChange,
+						handleBlur,
+						values,
+						touched,
+						errors,
+						setFieldValue,
+					}) => (
 						<React.Fragment>
 							<View style={styles.formControl}>
 								<Text style={styles.label}>Title</Text>
@@ -124,7 +131,9 @@ const EditProductScreen = (props) => {
 									<TextInput
 										style={styles.input}
 										value={values.price}
-										onChangeText={handleChange('price')}
+										onChangeText={(value) =>
+											setFieldValue('price', parseFloat(value))
+										}
 										onBlur={handleBlur('price')}
 										keyboardType="decimal-pad"
 										returnKeyType="next"
