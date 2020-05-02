@@ -19,18 +19,20 @@ import Colors from '../../constants/Colors';
 
 const ProductsOverviewScreen = (props) => {
 	const [isLoading, setIsLoading] = useState(false);
+	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [error, setError] = useState(null);
 	const products = useSelector((state) => state.products.availableProducts);
 	const dispatch = useDispatch();
 
 	const loadProducts = useCallback(async () => {
-		setIsLoading(true);
+		setError(null);
+		setIsRefreshing(true);
 		try {
 			await dispatch(productsActions.fetchProducts());
-		} catch (error) {
-			setError(error.message);
+		} catch (err) {
+			setError(err.message);
 		}
-		setIsLoading(false);
+		setIsRefreshing(false);
 	}, [dispatch, setIsLoading, setError]);
 
 	useEffect(() => {
@@ -45,8 +47,11 @@ const ProductsOverviewScreen = (props) => {
 	}, [loadProducts]);
 
 	useEffect(() => {
-		loadProducts();
-	}, [dispatch]);
+		setIsLoading(true);
+		loadProducts().then(() => {
+			setIsLoading(false);
+		});
+	}, [dispatch, loadProducts]);
 
 	const selectItemHandler = (id, title) => {
 		props.navigation.navigate('ProductDetail', {
@@ -58,7 +63,12 @@ const ProductsOverviewScreen = (props) => {
 	if (error) {
 		return (
 			<View style={styles.centered}>
-				<Text>{error}</Text>
+				<Text>An error occurred!</Text>
+				<Button
+					title="Try again"
+					onPress={loadProducts}
+					color={Colors.primary}
+				/>
 			</View>
 		);
 	}
@@ -79,6 +89,8 @@ const ProductsOverviewScreen = (props) => {
 
 	return (
 		<FlatList
+			onRefresh={loadProducts}
+			refreshing={isRefreshing}
 			data={products}
 			keyExtractor={(item) => item.id}
 			renderItem={(itemData) => (

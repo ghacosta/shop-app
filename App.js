@@ -1,5 +1,5 @@
 import React from 'react';
-import { createStore, combineReducers, applyMiddleware } from 'redux';
+import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
 import thunk from 'redux-thunk';
 import { AppLoading } from 'expo';
@@ -18,8 +18,10 @@ const rootReducer = combineReducers({
 
 const store = createStore(
 	rootReducer,
-	applyMiddleware(thunk),
-	window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+	compose(
+		applyMiddleware(thunk),
+		window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+	)
 );
 
 export default class App extends React.Component {
