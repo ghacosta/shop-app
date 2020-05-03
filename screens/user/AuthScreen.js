@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import {
 	ScrollView,
@@ -7,6 +7,8 @@ import {
 	Text,
 	StyleSheet,
 	Button,
+	ActivityIndicator,
+	Alert,
 } from 'react-native';
 import { Formik } from 'formik';
 import * as yup from 'yup';
@@ -19,15 +21,33 @@ import * as authActions from '../../store/actions/auth';
 import OutlineButton from '../../components/UI/OutlineButton';
 
 const AuthScreen = (props) => {
+	const [error, setError] = useState();
+	const [isLoading, setIsLoading] = useState(false);
 	const [isSignup, setIsSignup] = useState(false);
 	const dispatch = useDispatch();
 
-	const authHandler = (email, password) => {
-		if (isSignup) {
-			dispatch(authActions.signup(email, password));
-		} else {
-			dispatch(authActions.login(email, password));
+	useEffect(() => {
+		if (error) {
+			console.log('ALERT ERROR:', error);
+			Alert.alert('An error ocurred', error, [{ text: 'Okay' }]);
 		}
+	}, [error]);
+
+	const authHandler = async (email, password) => {
+		let action;
+		if (isSignup) {
+			action = authActions.signup(email, password);
+		} else {
+			action = authActions.login(email, password);
+		}
+		setError(null);
+		setIsLoading(true);
+		try {
+			await dispatch(action);
+		} catch (error) {
+			setError(error.message);
+		}
+		setIsLoading(false);
 	};
 
 	return (
@@ -44,10 +64,18 @@ const AuthScreen = (props) => {
 						}}
 						validationSchema={yup.object().shape({
 							email: yup.string().email().required(),
-							password: yup.string().required(),
+							password: yup.string().min(6).required(),
 						})}
 					>
-						{({ handleChange, handleBlur, values, touched, errors }) => (
+						{({
+							handleChange,
+							handleBlur,
+							values,
+							touched,
+							errors,
+							isValid,
+							dirty,
+						}) => (
 							<React.Fragment>
 								<View style={styles.formControl}>
 									<Text style={styles.label}>Email</Text>
@@ -56,6 +84,8 @@ const AuthScreen = (props) => {
 										onChangeText={handleChange('email')}
 										onBlur={handleBlur('email')}
 										value={values.email}
+										autoCapitalize="none"
+										keyboardType="email-address"
 										returnKeyType="next"
 									/>
 									{touched.email && errors.email && (
@@ -77,20 +107,23 @@ const AuthScreen = (props) => {
 									)}
 								</View>
 								<View style={styles.buttonContainer}>
-									<Button
-										title={isSignup ? 'Sign Up' : 'Log In'}
-										color={isSignup ? Colors.accent : Colors.primary}
-										onPress={() => authHandler(values.email, values.password)}
-									/>
+									{isLoading ? (
+										<ActivityIndicator size="small" color={Colors.primary} />
+									) : (
+										<Button
+											title={isSignup ? 'Sign Up' : 'Log In'}
+											color={isSignup ? Colors.accent : Colors.primary}
+											onPress={() => authHandler(values.email, values.password)}
+											disabled={!(isValid && dirty)}
+										/>
+									)}
 								</View>
 								<View style={styles.buttonContainer}>
 									<OutlineButton
 										title={isSignup ? 'switch to login' : 'switch to signup'}
 										color={isSignup ? Colors.accent : Colors.primary}
 										onPress={() => {
-											console.log(isSignup);
 											setIsSignup((prevState) => !prevState);
-											console.log(isSignup);
 										}}
 									/>
 								</View>

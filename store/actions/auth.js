@@ -1,6 +1,21 @@
 export const SIGNUP = 'SIGNUP';
 export const LOGIN = 'LOGIN';
 
+export const ERROR_MESSAGES = new Map([
+	[
+		'EMAIL_NOT_FOUND',
+		'There is no user record corresponding to this identifier.',
+	],
+	['INVALID_PASSWORD', 'The password is invalid.'],
+	['USER_DISABLED', 'The user account has been disabled by an administrator.'],
+	['EMAIL_EXISTS', 'The email address is already in use by another account.'],
+	['OPERATION_NOT_ALLOWED', 'Password sign-in is disabled for this project.'],
+	[
+		'TOO_MANY_ATTEMPTS_TRY_LATER',
+		'We have blocked all requests from this device due to unusual activity. Try again later.',
+	],
+]);
+
 export const signup = (email, password) => {
 	return async (dispatch) => {
 		const response = await fetch(
@@ -19,11 +34,12 @@ export const signup = (email, password) => {
 		);
 
 		if (!response.ok) {
-			throw new Error('Something went wrong 1');
+			const errorResData = await response.json();
+			const errorId = errorResData.error.message;
+			throw new Error(ERROR_MESSAGES.get(errorId));
 		}
 
 		const resData = await response.json();
-		console.log(resData);
 		dispatch({ type: SIGNUP });
 	};
 };
@@ -46,11 +62,12 @@ export const login = (email, password) => {
 		);
 
 		if (!response.ok) {
-			throw new Error('Something went wrong 2');
+			const errorResData = await response.json();
+			const errorId = errorResData.error.message;
+			throw new Error(ERROR_MESSAGES.get(errorId));
 		}
 
 		const resData = await response.json();
-		console.log(resData);
 		dispatch({ type: LOGIN });
 	};
 };
